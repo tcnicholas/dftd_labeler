@@ -1,9 +1,9 @@
-# DFT Database Processor
+# DFT Dispersion Correction Labeler
 
-This Python-based project is designed to process a database of molecular 
-structures and label them with DFT-D4 corrections. It reads an existing 
-database, applies the desired DFT method and dispersion scheme, and writes the 
-corrected structures to a new database.
+This Python-based project is designed to process a database of structures and 
+label them with DFT dispersion corrections. It reads an existing database, 
+applies the desired DFT dispersion scheme ontop of the present energy and force
+labels, and writes the corrected structures to a new database.
 
 ## Installation
 
@@ -25,7 +25,7 @@ conda install -c conda-forge ase simple-dftd3 dftd3-python dftd4 dftd4-python -y
 After installation, you can use the tool as a command-line program:
 
 ```css
-dft_db_processor -i INPUT_DATABASE_PATH -o OUTPUT_DATABASE_PATH -d DISPERSION_SCHEME
+dftd_labeler -i INPUT_DATABASE_PATH -o OUTPUT_DATABASE_PATH -d DISPERSION_SCHEME
 ```
 
 ## Options
@@ -40,25 +40,15 @@ dft_db_processor -i INPUT_DATABASE_PATH -o OUTPUT_DATABASE_PATH -d DISPERSION_SC
 To process a database using the default DFT method (SCAN) and the DFT-D4 dispersion scheme:
 
 ```css
-dft_db_processor -i my_database.extxyz -o output_database.extxyz -d 4
+dftd_labeler -i my_database.extxyz -o output_database.extxyz -d 4
 ```
 
 ## Dependencies
 
 This project depends on several Python libraries, including ase, dftd4.ase, 
-dftd3.ase, and more. Ensure you have all required dependencies installed.
+dftd3.ase. Ensure you have all required dependencies installed.
 
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to 
 discuss what you would like to change.
-
-
-## Within conda
-
-```bash
-conda create -n dftd23 python=3.9 -y
-conda activate dftd23
-
-conda install -c conda-forge ase simple-dftd3 dftd3-python dftd4 dftd4-python -y
-```
