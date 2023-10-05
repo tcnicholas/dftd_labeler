@@ -3,8 +3,10 @@ import hashlib
 import argparse
 import logging
 from typing import List
+
 from ase import Atoms
 from ase.io import read, extxyz
+
 from dftd4.ase import DFTD4
 from dftd3.ase import DFTD3
 
@@ -29,17 +31,50 @@ def setup_environment() -> None:
         os.environ[key] = val
 
 
-def append_to_extxyz(filename: str, atom_obj: Atoms, dispersion: int) -> None:
+def normalize_restart_choice(value: str) -> str:
+    """
+    Normalize the restart choice to a valid value.
+
+    :param value: The value to normalize.
+    :return: The normalized value.
+    """
+    value = value.lower()
+    if value in ['y', 'yes']:
+        return 'yes'
+    elif value in ['n', 'no']:
+        return 'no'
+    else:
+        raise argparse.ArgumentTypeError(
+            f"Invalid choice '{value}' (choose from 'y', 'yes', 'n', 'no')"
+        )
+
+
+def append_to_extxyz(
+    filename: str, 
+    atom_obj: Atoms, 
+    dft_method: str, 
+    dispersion: int
+) -> None:
     """
     Append an Atoms object to an extxyz file.
 
     :param filename: name of file to write.
     :param atom_obj: ASE Atoms object to be appended.
+    :param dft_method: DFT method used originally.
     :param dispersion: Dispersion scheme to use.
     """
+
+    # presere the order of the first three columns.
     extxyz_columns = [
-        'symbols', 'numbers', 'positions', 'forces_SCAN', f'forces_SCAN_d{dispersion}'
+        'symbols', 'numbers', 'positions', f'forces_{dft_method}_d{dispersion}'
     ]
+
+    # then add additional columns that are not already present.
+    extxyz_columns += [
+        col for col in atom_obj.arrays.keys() if col not in extxyz_columns
+    ]
+
+    # write the Atoms object to the file.
     with open(filename, 'a') as f:
         extxyz.write_extxyz(
             f, [atom_obj], 
@@ -113,26 +148,28 @@ def process_structure(atoms: Atoms, dft_method: str, dispersion: int) -> Atoms:
 
     # compute the new stress.
     atoms.info[stress_label+f'_d{dispersion}'] = atoms.info[stress_label] + \
-        (-atoms_dispersion.get_stress(voigt=False) * atoms_dispersion.get_volume()).flatten()
+        (-atoms_dispersion.get_stress(voigt=False) * \
+            atoms_dispersion.get_volume()).flatten()
 
     return atoms
 
 
 def main():
     """
-    Main function to label structures with DFT-D4 correction.
+    Main function to label structures with DFT dispersion correction.
     """
 
     setup_environment()
 
     parser = argparse.ArgumentParser(
-        description="Label structures with DFT-D4 correction."
+        description="Label structures with DFT dispersion correction."
     )
     parser.add_argument(
         "-m", "--dft_method", 
         type=str, 
         default='SCAN', 
-        help="DFT Method to be used. Default is 'SCAN'."
+        help="DFT Method to be used. Default is 'SCAN'. This is passed to the" \
+            " ASE calculator."
     )
     parser.add_argument(
         "-i", "--input_database",
@@ -153,12 +190,30 @@ def main():
         choices=[3, 4], 
         help="Which dispersion scheme to use."
     )
+    parser.add_argument(
+        "-r", "--restart", 
+        type=normalize_restart_choice, 
+        default='no',
+        help="Whether to restart the entire run. Options: 'y', 'yes', 'n', 'no' (case-insensitive)."
+    )
     args = parser.parse_args()
 
+    # if we are restarting, delete the output file and index file if they exist.
     index_file = generate_index_filename(
         args.input_database, 
         args.output_database
     )
+    if args.restart == 'yes':
+        logger.info("Restarting from scratch.")
+        if os.path.exists(args.output_database):
+            os.remove(args.output_database)
+        index_file = generate_index_filename(
+            args.input_database, 
+            args.output_database
+        )
+        if os.path.exists(index_file):
+            os.remove(index_file)
+
     start_idx = retrieve_start_index(index_file)
 
     try:
@@ -172,11 +227,18 @@ def main():
         return
 
     for idx, atom in enumerate(full_database[start_idx:], start=start_idx):
-        
         logger.info(f"Processing structure: {idx}")
-        processed_atom = process_structure(atom,args.dft_method,args.dispersion)
-        append_to_extxyz(args.output_database,processed_atom,args.dispersion)
-
+        processed_atom = process_structure(
+            atom,
+            args.dft_method,
+            args.dispersion
+        )
+        append_to_extxyz(
+            args.output_database,
+            processed_atom,
+            args.dft_method,
+            args.dispersion
+        )
         with open(index_file, 'w') as f:
             f.write(f"Input: {args.input_database}\nOutput: {args.output_database}\n{idx}")
 
