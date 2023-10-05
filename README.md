@@ -20,6 +20,12 @@ Then install conda-specific dependencies:
 conda install -c conda-forge ase simple-dftd3 dftd3-python dftd4 dftd4-python -y
 ```
 
+Finally, install the tools:
+
+```bash
+pip install dftd-labeler
+```
+
 ## Usage
 
 After installation, you can use the tool as a command-line program:
