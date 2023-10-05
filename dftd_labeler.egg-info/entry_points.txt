@@ -1,0 +1,2 @@
+[console_scripts]
+dftd_labeler = dftd_labeler.labeler:main
