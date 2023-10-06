@@ -58,3 +58,15 @@ dftd3.ase. Ensure you have all required dependencies installed.
 
 Pull requests are welcome. For major changes, please open an issue first to 
 discuss what you would like to change.
+
+## ToDo list
+
+[x] Implement basic program structure
+[x] Add D3 and D4 support
+[] MPI parallelisation?
+[] Add divide and conquer functionality: currently separate database files are
+    required in order to run several labelling tasks at once. Develop basic 
+    function to divide the database into chunks and set off the tasks. Possible
+    approaches: (a) uniform chunks of structure; (b) uniform chunks of atoms.
+[] Improve logging and file I/O. It is quite messy...
+
